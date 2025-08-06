@@ -22,6 +22,15 @@ pub struct MilestoneText;
 #[derive(Component)]
 pub struct OrbsText;
 
+#[derive(Component)]
+pub struct LevelText;
+
+#[derive(Component)]
+pub struct MoonrocksText;
+
+#[derive(Component)]
+pub struct CheddahText;
+
 pub struct InterfacePlugin;
 
 impl Plugin for InterfacePlugin {
@@ -212,6 +221,39 @@ fn setup_playing_ui(mut commands: Commands) {
                 },
                 TextColor(Color::WHITE),
                 OrbsText,
+            ));
+            
+            // Level
+            stats_parent.spawn((
+                Text::new("Level: 1"),
+                TextFont {
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                LevelText,
+            ));
+            
+            // Moonrocks
+            stats_parent.spawn((
+                Text::new("Moonrocks: 0"),
+                TextFont {
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                MoonrocksText,
+            ));
+            
+            // Cheddah
+            stats_parent.spawn((
+                Text::new("Cheddah: 0"),
+                TextFont {
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                CheddahText,
             ));
         });
 
