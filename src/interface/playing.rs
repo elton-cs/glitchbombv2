@@ -160,6 +160,7 @@ pub fn setup_playing_ui(mut commands: Commands) {
 }
 
 pub fn handle_quit_button(
+    mut commands: Commands,
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor, &mut BorderColor),
         (Changed<Interaction>, With<QuitButton>),
@@ -171,6 +172,11 @@ pub fn handle_quit_button(
             Interaction::Pressed => {
                 *background_color = BackgroundColor(Color::srgb(0.1, 0.1, 0.1));
                 *border_color = BorderColor(Color::srgb(0.3, 0.3, 0.3));
+                
+                // Reset player state when quitting
+                commands.remove_resource::<crate::game_state::PlayerGameState>();
+                info!("Quit button pressed - resetting game state");
+                
                 next_state.set(GameState::Menu);
             }
             Interaction::Hovered => {
