@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use crate::interface::{GameState, StatDisplay, StatType};
+use rand::Rng;
 
 pub struct GameStatePlugin;
 
@@ -34,10 +35,10 @@ impl Default for PlayerGameState {
         }
         
         Self {
-            health: 100,
+            health: 5,
             points: 0,
             game_id: 1,
-            milestone: 0,
+            milestone: 15,
             orbs,
             level: 1,
             moonrocks: 0,
@@ -69,7 +70,9 @@ impl PlayerGameState {
     pub fn set_cheddah(&mut self, value: u32) { self.cheddah = value; }
 
     // Increment methods
-    pub fn add_health(&mut self, amount: u32) { self.health += amount; }
+    pub fn add_health(&mut self, amount: u32) { 
+        self.health = (self.health + amount).min(5); 
+    }
     pub fn add_points(&mut self, amount: u32) { self.points += amount; }
     pub fn add_orb(&mut self, orb: Orb) { self.orbs.push(orb); }
     pub fn add_moonrocks(&mut self, amount: u32) { self.moonrocks += amount; }
@@ -102,6 +105,7 @@ impl PlayerGameState {
 
     // Utility methods
     pub fn is_dead(&self) -> bool { self.health == 0 }
+    pub fn is_at_max_health(&self) -> bool { self.health == 5 }
     pub fn has_orb(&self, orb_type: Orb) -> bool { 
         self.orbs.contains(&orb_type) 
     }
@@ -126,12 +130,48 @@ impl PlayerGameState {
     pub fn reset_to_defaults(&mut self) {
         *self = Self::default();
     }
+
+    // Pull and consume a random orb
+    pub fn pull_orb(&mut self) -> Option<Orb> {
+        if self.orbs.is_empty() {
+            return None;
+        }
+
+        // Generate random index
+        let mut rng = rand::thread_rng();
+        let random_index = rng.gen_range(0..self.orbs.len());
+        
+        // Remove the orb at random index
+        let orb = self.orbs.remove(random_index);
+        
+        // Apply orb effects
+        match orb {
+            Orb::Health => {
+                if !self.is_at_max_health() {
+                    self.add_health(1);
+                    info!("Consumed Health orb: +1 health (now {})", self.health);
+                } else {
+                    info!("Consumed Health orb: no effect (health already at max)");
+                }
+            },
+            Orb::Point => {
+                self.add_points(5);
+                info!("Consumed Point orb: +5 points");
+            },
+            Orb::Bomb => {
+                self.subtract_health(2);
+                info!("Consumed Bomb orb: -2 health");
+            },
+        }
+
+        Some(orb)
+    }
 }
 
 impl Plugin for GameStatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), setup_game)
-            .add_systems(Update, update_stats_display.run_if(in_state(GameState::Playing)))
+            .add_systems(Update, (update_stats_display, check_win_loss_conditions).run_if(in_state(GameState::Playing)))
             .add_systems(OnExit(GameState::Playing), cleanup_game);
     }
 }
@@ -163,6 +203,24 @@ fn update_stats_display(
                 StatType::Moonrocks => format!("Moonrocks: {}", state.moonrocks),
                 StatType::Cheddah => format!("Cheddah: {}", state.cheddah),
             };
+        }
+    }
+}
+
+fn check_win_loss_conditions(
+    player_state: Option<Res<PlayerGameState>>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    if let Some(state) = player_state {
+        // Check win condition: points >= milestone
+        if state.points >= state.milestone {
+            info!("Player wins! Points: {} >= Milestone: {}", state.points, state.milestone);
+            next_state.set(GameState::GameWon);
+        }
+        // Check loss condition: health <= 0
+        else if state.health == 0 {
+            info!("Player loses! Health reached zero.");
+            next_state.set(GameState::GameLost);
         }
     }
 }
