@@ -1,7 +1,10 @@
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
 mod interface;
+mod game_state;
+
 use interface::InterfacePlugin;
+use game_state::GameStatePlugin;
 
 pub struct GamePlugin;
 impl Plugin for GamePlugin {
@@ -25,6 +28,7 @@ impl Plugin for GamePlugin {
                     ..default()
                 }),
         )
-        .add_plugins(InterfacePlugin);
+        .add_plugins(InterfacePlugin)
+        .add_plugins(GameStatePlugin);
     }
 }

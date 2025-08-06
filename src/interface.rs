@@ -7,6 +7,21 @@ pub enum GameState {
     Playing,
 }
 
+#[derive(Component)]
+pub struct HealthText;
+
+#[derive(Component)]
+pub struct PointsText;
+
+#[derive(Component)]
+pub struct GameIdText;
+
+#[derive(Component)]
+pub struct MilestoneText;
+
+#[derive(Component)]
+pub struct OrbsText;
+
 pub struct InterfacePlugin;
 
 impl Plugin for InterfacePlugin {
@@ -133,6 +148,74 @@ fn setup_playing_ui(mut commands: Commands) {
         PlayingUI,
     ))
     .with_children(|parent| {
+        // Stats display container
+        parent.spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                row_gap: Val::Px(5.0),
+                margin: UiRect::bottom(Val::Px(30.0)),
+                ..default()
+            },
+        ))
+        .with_children(|stats_parent| {
+            // Health
+            stats_parent.spawn((
+                Text::new("Health: 100"),
+                TextFont {
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                HealthText,
+            ));
+            
+            // Points
+            stats_parent.spawn((
+                Text::new("Points: 0"),
+                TextFont {
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                PointsText,
+            ));
+            
+            // Game ID
+            stats_parent.spawn((
+                Text::new("Game ID: 1"),
+                TextFont {
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                GameIdText,
+            ));
+            
+            // Milestone
+            stats_parent.spawn((
+                Text::new("Milestone: 0"),
+                TextFont {
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                MilestoneText,
+            ));
+            
+            // Orbs
+            stats_parent.spawn((
+                Text::new("Orbs: 0"),
+                TextFont {
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                OrbsText,
+            ));
+        });
+
+        // Quit button
         parent.spawn((
             Button,
             Node {
@@ -147,8 +230,8 @@ fn setup_playing_ui(mut commands: Commands) {
             BorderColor(Color::srgb(0.4, 0.4, 0.4)),
             QuitButton,
         ))
-        .with_children(|parent| {
-            parent.spawn((
+        .with_children(|button_parent| {
+            button_parent.spawn((
                 Text::new("QUIT"),
                 TextFont {
                     font_size: 24.0,
