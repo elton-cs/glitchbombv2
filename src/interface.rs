@@ -7,29 +7,22 @@ pub enum GameState {
     Playing,
 }
 
-#[derive(Component)]
-pub struct HealthText;
+#[derive(Component, Debug, Clone, Copy, PartialEq)]
+pub enum StatType {
+    Health,
+    Points,
+    GameId,
+    Milestone,
+    Orbs,
+    Level,
+    Moonrocks,
+    Cheddah,
+}
 
 #[derive(Component)]
-pub struct PointsText;
-
-#[derive(Component)]
-pub struct GameIdText;
-
-#[derive(Component)]
-pub struct MilestoneText;
-
-#[derive(Component)]
-pub struct OrbsText;
-
-#[derive(Component)]
-pub struct LevelText;
-
-#[derive(Component)]
-pub struct MoonrocksText;
-
-#[derive(Component)]
-pub struct CheddahText;
+pub struct StatDisplay {
+    pub stat_type: StatType,
+}
 
 pub struct InterfacePlugin;
 
@@ -176,7 +169,7 @@ fn setup_playing_ui(mut commands: Commands) {
                     ..default()
                 },
                 TextColor(Color::WHITE),
-                HealthText,
+                StatDisplay { stat_type: StatType::Health },
             ));
             
             // Points
@@ -187,7 +180,7 @@ fn setup_playing_ui(mut commands: Commands) {
                     ..default()
                 },
                 TextColor(Color::WHITE),
-                PointsText,
+                StatDisplay { stat_type: StatType::Points },
             ));
             
             // Game ID
@@ -198,7 +191,7 @@ fn setup_playing_ui(mut commands: Commands) {
                     ..default()
                 },
                 TextColor(Color::WHITE),
-                GameIdText,
+                StatDisplay { stat_type: StatType::GameId },
             ));
             
             // Milestone
@@ -209,7 +202,7 @@ fn setup_playing_ui(mut commands: Commands) {
                     ..default()
                 },
                 TextColor(Color::WHITE),
-                MilestoneText,
+                StatDisplay { stat_type: StatType::Milestone },
             ));
             
             // Orbs
@@ -220,7 +213,7 @@ fn setup_playing_ui(mut commands: Commands) {
                     ..default()
                 },
                 TextColor(Color::WHITE),
-                OrbsText,
+                StatDisplay { stat_type: StatType::Orbs },
             ));
             
             // Level
@@ -231,7 +224,7 @@ fn setup_playing_ui(mut commands: Commands) {
                     ..default()
                 },
                 TextColor(Color::WHITE),
-                LevelText,
+                StatDisplay { stat_type: StatType::Level },
             ));
             
             // Moonrocks
@@ -242,7 +235,7 @@ fn setup_playing_ui(mut commands: Commands) {
                     ..default()
                 },
                 TextColor(Color::WHITE),
-                MoonrocksText,
+                StatDisplay { stat_type: StatType::Moonrocks },
             ));
             
             // Cheddah
@@ -253,7 +246,7 @@ fn setup_playing_ui(mut commands: Commands) {
                     ..default()
                 },
                 TextColor(Color::WHITE),
-                CheddahText,
+                StatDisplay { stat_type: StatType::Cheddah },
             ));
         });
 
