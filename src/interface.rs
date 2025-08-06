@@ -207,7 +207,7 @@ fn setup_playing_ui(mut commands: Commands) {
             
             // Orbs
             stats_parent.spawn((
-                Text::new("Orbs: 0"),
+                Text::new("Orbs: H:5 P:5 B:5"),
                 TextFont {
                     font_size: 20.0,
                     ..default()
