@@ -57,6 +57,12 @@ impl Plugin for GamePlugin {
                 game_state::systems::setup_game
             ).chain()
         );
+
+        // Level complete state entry - setup transition screen
+        app.add_systems(
+            OnEnter(GameState::LevelComplete), 
+            interface::level_complete::setup_level_complete_ui
+        );
         
         // Game end states - setup appropriate end screen UI
         app.add_systems(
@@ -89,6 +95,13 @@ impl Plugin for GamePlugin {
                 game_state::systems::check_win_loss_conditions
             ).chain().run_if(in_state(GameState::Playing))
         );
+
+        // Level complete update - handle next level button
+        app.add_systems(
+            Update, 
+            interface::level_complete::handle_next_level_button
+                .run_if(in_state(GameState::LevelComplete))
+        );
         
         // Game end update - handle restart button for both win/loss states
         app.add_systems(
@@ -105,24 +118,33 @@ impl Plugin for GamePlugin {
             interface::menu::cleanup_menu
         );
         
-        // Playing state exit - cleanup UI first, then game state
+        // Playing state exit - cleanup UI only (preserve game state for level transition)
         app.add_systems(
             OnExit(GameState::Playing), 
+            interface::playing::cleanup_playing
+        );
+        
+        // Game end states cleanup - also cleanup game state resource
+        app.add_systems(
+            OnExit(GameState::GameWon), 
             (
-                interface::playing::cleanup_playing, 
+                interface::game_end::cleanup_game_end,
                 game_state::systems::cleanup_game
             ).chain()
         );
         
-        // Game end states cleanup
-        app.add_systems(
-            OnExit(GameState::GameWon), 
-            interface::game_end::cleanup_game_end
-        );
-        
         app.add_systems(
             OnExit(GameState::GameLost), 
-            interface::game_end::cleanup_game_end
+            (
+                interface::game_end::cleanup_game_end,
+                game_state::systems::cleanup_game
+            ).chain()
+        );
+
+        // Level complete state cleanup
+        app.add_systems(
+            OnExit(GameState::LevelComplete), 
+            interface::level_complete::cleanup_level_complete
         );
     }
 }

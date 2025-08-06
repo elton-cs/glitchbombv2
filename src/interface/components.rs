@@ -20,3 +20,9 @@ pub struct GameEndUI;
 
 #[derive(Component)]
 pub struct RestartButton;
+
+#[derive(Component)]
+pub struct LevelCompleteUI;
+
+#[derive(Component)]
+pub struct NextLevelButton;

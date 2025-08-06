@@ -16,29 +16,35 @@ pub struct PlayerGameState {
 
 impl Default for PlayerGameState {
     fn default() -> Self {
-        let mut orbs = Vec::new();
-        
-        for _ in 0..5 {
-            orbs.push(Orb::Health);
-            orbs.push(Orb::Point);
-            orbs.push(Orb::Bomb);
-        }
-        
-        Self {
-            health: 5,
-            points: 0,
-            game_id: 1,
-            milestone: 15,
-            orbs,
-            level: 1,
-            moonrocks: 0,
-            cheddah: 0,
-        }
+        Self::new_for_level(1)
     }
 }
 
 #[allow(dead_code)]
 impl PlayerGameState {
+    pub fn new_for_level(level: u32) -> Self {
+        let orbs_per_type = 5 * 2_u32.pow(level.saturating_sub(1));
+        let mut orbs = Vec::new();
+        
+        for _ in 0..orbs_per_type {
+            orbs.push(Orb::Health);
+            orbs.push(Orb::Point);
+            orbs.push(Orb::Bomb);
+        }
+        
+        let milestone = 5 + (level * 10);
+        
+        Self {
+            health: 5,
+            points: 0,
+            game_id: 1,
+            milestone,
+            orbs,
+            level,
+            moonrocks: 0,
+            cheddah: 0,
+        }
+    }
     pub fn health(&self) -> u32 { self.health }
     pub fn points(&self) -> u32 { self.points }
     pub fn game_id(&self) -> u32 { self.game_id }
@@ -114,6 +120,24 @@ impl PlayerGameState {
     
     pub fn reset_to_defaults(&mut self) {
         *self = Self::default();
+    }
+
+    pub fn advance_to_next_level(&mut self) {
+        if self.level < 5 {
+            let current_moonrocks = self.moonrocks;
+            let current_cheddah = self.cheddah;
+            
+            self.level += 1;
+            *self = Self::new_for_level(self.level);
+            
+            self.points = 0;
+            self.moonrocks = current_moonrocks;
+            self.cheddah = current_cheddah;
+        }
+    }
+
+    pub fn is_final_level(&self) -> bool {
+        self.level >= 5
     }
 
     pub fn pull_orb(&mut self) -> Option<Orb> {

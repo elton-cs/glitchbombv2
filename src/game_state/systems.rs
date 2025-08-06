@@ -2,10 +2,19 @@ use bevy::prelude::*;
 use crate::interface::{GameState, StatDisplay, StatType};
 use super::PlayerGameState;
 
-pub fn setup_game(mut commands: Commands) {
+pub fn setup_game(
+    mut commands: Commands,
+    player_state: Option<Res<PlayerGameState>>,
+) {
     info!("Setting up game state");
     
-    commands.insert_resource(PlayerGameState::default());
+    // Only create new PlayerGameState if one doesn't exist (first time playing)
+    if player_state.is_none() {
+        info!("Creating new PlayerGameState");
+        commands.insert_resource(PlayerGameState::default());
+    } else {
+        info!("PlayerGameState already exists for level {}", player_state.unwrap().level());
+    }
 }
 
 pub fn update_stats_display(
@@ -38,8 +47,13 @@ pub fn check_win_loss_conditions(
 ) {
     if let Some(state) = player_state {
         if state.points >= state.milestone {
-            info!("Player wins! Points: {} >= Milestone: {}", state.points, state.milestone);
-            next_state.set(GameState::GameWon);
+            if state.is_final_level() {
+                info!("Player wins the game! Completed level {} with {} points", state.level, state.points);
+                next_state.set(GameState::GameWon);
+            } else {
+                info!("Level {} completed! Going to level complete screen", state.level);
+                next_state.set(GameState::LevelComplete);
+            }
         }
         else if state.health == 0 {
             info!("Player loses! Health reached zero.");
@@ -47,6 +61,7 @@ pub fn check_win_loss_conditions(
         }
     }
 }
+
 
 pub fn cleanup_game(mut commands: Commands) {
     info!("Cleaning up game state");
