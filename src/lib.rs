@@ -8,6 +8,8 @@ use interface::GameState;
 pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
+        // === CORE BEVY SETUP ===
+        // Configure Bevy plugins and window settings
         app.add_plugins(
             DefaultPlugins
                 .set(AssetPlugin {
@@ -28,18 +30,26 @@ impl Plugin for GamePlugin {
                 }),
         );
         
+        // Initialize game state system
         app.init_state::<GameState>();
         
+        // === STARTUP SYSTEMS ===
+        // Run once when the app starts, before any state transitions
         app.add_systems(
             Startup, 
             interface::camera::setup_camera
         );
         
+        // === STATE ENTRY SYSTEMS ===
+        // Run when entering each game state (Menu -> Playing -> GameWon/GameLost)
+        
+        // Menu state entry - initial state
         app.add_systems(
             OnEnter(GameState::Menu), 
             interface::menu::setup_menu_ui
         );
         
+        // Playing state entry - setup UI first, then game logic
         app.add_systems(
             OnEnter(GameState::Playing), 
             (
@@ -48,6 +58,7 @@ impl Plugin for GamePlugin {
             ).chain()
         );
         
+        // Game end states - setup appropriate end screen UI
         app.add_systems(
             OnEnter(GameState::GameWon), 
             interface::game_end::setup_game_won_ui
@@ -58,13 +69,17 @@ impl Plugin for GamePlugin {
             interface::game_end::setup_game_lost_ui
         );
         
+        // === UPDATE SYSTEMS ===
+        // Run every frame while in specific states
+        
+        // Menu update - handle start button clicks
         app.add_systems(
             Update, 
-            (
-                interface::menu::handle_start_button
-            ).run_if(in_state(GameState::Menu))
+            interface::menu::handle_start_button
+                .run_if(in_state(GameState::Menu))
         );
         
+        // Playing update - handle input, update display, check win/loss (in order)
         app.add_systems(
             Update, 
             (
@@ -75,17 +90,22 @@ impl Plugin for GamePlugin {
             ).chain().run_if(in_state(GameState::Playing))
         );
         
+        // Game end update - handle restart button for both win/loss states
         app.add_systems(
             Update, 
             interface::game_end::handle_restart_button
                 .run_if(in_state(GameState::GameWon).or(in_state(GameState::GameLost)))
         );
         
+        // === STATE EXIT SYSTEMS ===
+        // Run when leaving each game state to clean up resources
+        
         app.add_systems(
             OnExit(GameState::Menu), 
             interface::menu::cleanup_menu
         );
         
+        // Playing state exit - cleanup UI first, then game state
         app.add_systems(
             OnExit(GameState::Playing), 
             (
@@ -94,6 +114,7 @@ impl Plugin for GamePlugin {
             ).chain()
         );
         
+        // Game end states cleanup
         app.add_systems(
             OnExit(GameState::GameWon), 
             interface::game_end::cleanup_game_end
