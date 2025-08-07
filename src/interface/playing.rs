@@ -131,7 +131,7 @@ pub fn setup_playing_ui(
             
             latest_parent.spawn((
                 Node {
-                    width: Val::Px(60.0),
+                    width: Val::Px(80.0),
                     height: Val::Px(60.0),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
@@ -149,16 +149,16 @@ pub fn setup_playing_ui(
                 // Show the latest orb if there is one
                 if let Some(ref state) = player_state {
                     if let Some(latest_orb) = state.pull_history().last() {
-                        let (color, symbol) = match latest_orb {
-                            Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), "H"),
-                            Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), "P"),
-                            Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                        let (color, text) = match latest_orb {
+                            Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), latest_orb.display_text()),
+                            Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), latest_orb.display_text()),
+                            Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), latest_orb.display_text()),
                         };
                         
                         orb_parent.spawn((
-                            Text::new(symbol),
+                            Text::new(text),
                             TextFont {
-                                font_size: 36.0,
+                                font_size: 20.0,
                                 ..default()
                             },
                             TextColor(color),
@@ -207,7 +207,7 @@ pub fn setup_playing_ui(
             
             history_parent.spawn((
                 Node {
-                    width: Val::Px(190.0), // Container width for 5 orbs (30px each + 10px gaps)
+                    width: Val::Px(275.0), // Container width for 5 orbs (50px each + 5px gaps)
                     height: Val::Px(30.0),
                     position_type: PositionType::Relative,
                     overflow: Overflow::clip(), // Hide orbs that slide out
@@ -221,21 +221,21 @@ pub fn setup_playing_ui(
                 // Initialize with existing pull history if any
                 if let Some(ref state) = player_state {
                     for (index, orb) in state.pull_history().iter().enumerate() {
-                        let (color, symbol) = match orb {
-                            Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), "H"),
-                            Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), "P"),
-                            Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                        let (color, text) = match orb {
+                            Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), orb.display_text()),
+                            Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), orb.display_text()),
+                            Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), orb.display_text()),
                         };
                         
                         container_parent.spawn((
                             Node {
-                                width: Val::Px(30.0),
+                                width: Val::Px(50.0),
                                 height: Val::Px(30.0),
                                 justify_content: JustifyContent::Center,
                                 align_items: AlignItems::Center,
                                 border: UiRect::all(Val::Px(2.0)),
                                 position_type: PositionType::Absolute,
-                                left: Val::Px(index as f32 * 40.0), // Position based on index
+                                left: Val::Px(index as f32 * 55.0), // Position based on index with more space
                                 ..default()
                             },
                             BackgroundColor(color.with_alpha(0.3)),
@@ -248,9 +248,9 @@ pub fn setup_playing_ui(
                         ))
                         .with_children(|orb_parent| {
                             orb_parent.spawn((
-                                Text::new(symbol),
+                                Text::new(text),
                                 TextFont {
-                                    font_size: 18.0,
+                                    font_size: 12.0,
                                     ..default()
                                 },
                                 TextColor(Color::WHITE),
@@ -410,19 +410,19 @@ pub fn update_pull_history(
         let history = state.pull_history();
         commands.entity(container_entity).with_children(|parent| {
             for (index, orb) in history.iter().enumerate() {
-                let (color, symbol) = match orb {
-                    Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), "H"),
-                    Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), "P"),
-                    Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                let (color, text) = match orb {
+                    Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), orb.display_text()),
+                    Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), orb.display_text()),
+                    Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), orb.display_text()),
                 };
                 
                 // Check if this is the new orb (rightmost)
                 let is_new_orb = index == history.len() - 1;
-                let start_x = if is_new_orb { 200.0 } else { index as f32 * 40.0 };
+                let start_x = if is_new_orb { 300.0 } else { index as f32 * 55.0 };
                 
                 parent.spawn((
                     Node {
-                        width: Val::Px(30.0),
+                        width: Val::Px(50.0),
                         height: Val::Px(30.0),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
@@ -441,9 +441,9 @@ pub fn update_pull_history(
                 ))
                 .with_children(|orb_parent| {
                     orb_parent.spawn((
-                        Text::new(symbol),
+                        Text::new(text),
                         TextFont {
-                            font_size: 18.0,
+                            font_size: 12.0,
                             ..default()
                         },
                         TextColor(Color::WHITE),
@@ -471,7 +471,7 @@ pub fn animate_pull_history(
         orb_data.animation_timer += time.delta_secs();
         
         // Position orbs from left to right based on their position index
-        let target_x = orb_data.position as f32 * 40.0; // 30px width + 10px gap
+        let target_x = orb_data.position as f32 * 55.0; // 50px width + 5px gap
         let current_x = node.left.resolve(0.0, Vec2::ZERO).unwrap_or(200.0);
         
         // Smooth interpolation
@@ -512,10 +512,10 @@ pub fn update_latest_orb_display(
         // Add new text for the latest orb
         commands.entity(display_entity).with_children(|parent| {
             if let Some(latest_orb) = state.pull_history().last() {
-                let (color, symbol) = match latest_orb {
-                    Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), "H"),
-                    Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), "P"),
-                    Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                let (color, text) = match latest_orb {
+                    Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), latest_orb.display_text()),
+                    Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), latest_orb.display_text()),
+                    Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), latest_orb.display_text()),
                 };
                 
                 // Update the display's background color to match the orb
@@ -523,9 +523,9 @@ pub fn update_latest_orb_display(
                 *border_color = BorderColor(color);
                 
                 parent.spawn((
-                    Text::new(symbol),
+                    Text::new(text),
                     TextFont {
-                        font_size: 36.0,
+                        font_size: 20.0,
                         ..default()
                     },
                     TextColor(color),

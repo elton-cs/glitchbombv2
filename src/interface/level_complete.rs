@@ -88,12 +88,12 @@ pub fn setup_level_complete_ui(
                     
                     history_parent.spawn((
                         Node {
-                            width: Val::Px(190.0), // Container width for 5 orbs (30px each + 10px gaps)
+                            width: Val::Px(275.0), // Container width for 5 orbs (50px each + 5px gaps)
                             height: Val::Px(30.0),
                             flex_direction: FlexDirection::Row,
                             justify_content: JustifyContent::Center,
                             align_items: AlignItems::Center,
-                            column_gap: Val::Px(10.0),
+                            column_gap: Val::Px(5.0),
                             margin: UiRect::top(Val::Px(5.0)),
                             ..default()
                         },
@@ -102,15 +102,15 @@ pub fn setup_level_complete_ui(
                     .with_children(|container_parent| {
                         // Show the last 5 orbs from pull history
                         for orb in state.pull_history().iter() {
-                            let (color, symbol) = match orb {
-                                Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), "H"),
-                                Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), "P"),
-                                Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                            let (color, text) = match orb {
+                                Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), orb.display_text()),
+                                Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), orb.display_text()),
+                                Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), orb.display_text()),
                             };
                             
                             container_parent.spawn((
                                 Node {
-                                    width: Val::Px(30.0),
+                                    width: Val::Px(50.0),
                                     height: Val::Px(30.0),
                                     justify_content: JustifyContent::Center,
                                     align_items: AlignItems::Center,
@@ -122,9 +122,9 @@ pub fn setup_level_complete_ui(
                             ))
                             .with_children(|orb_parent| {
                                 orb_parent.spawn((
-                                    Text::new(symbol),
+                                    Text::new(text),
                                     TextFont {
-                                        font_size: 18.0,
+                                        font_size: 12.0,
                                         ..default()
                                     },
                                     TextColor(Color::WHITE),

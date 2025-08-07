@@ -15,4 +15,12 @@ impl Orb {
         }
         orbs
     }
+
+    pub fn display_text(&self) -> String {
+        match self {
+            Orb::Health(value) => format!("H(+{})", value),
+            Orb::Point(value) => format!("P(+{})", value),
+            Orb::Bomb(value) => format!("B(-{})", value),
+        }
+    }
 }
