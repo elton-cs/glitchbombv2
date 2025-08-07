@@ -12,6 +12,7 @@ pub struct PlayerGameState {
     pub level: u32,
     pub moonrocks: u32,
     pub cheddah: u32,
+    pub purchased_orbs: Vec<Orb>,  // Track orbs purchased in marketplace
 }
 
 impl Default for PlayerGameState {
@@ -23,10 +24,9 @@ impl Default for PlayerGameState {
 #[allow(dead_code)]
 impl PlayerGameState {
     pub fn new_for_level(level: u32) -> Self {
-        let orbs_per_type = 5 * 2_u32.pow(level.saturating_sub(1));
+        // Base orbs: always 5 of each type per level
         let mut orbs = Vec::new();
-        
-        for _ in 0..orbs_per_type {
+        for _ in 0..5 {
             orbs.push(Orb::Health);
             orbs.push(Orb::Point);
             orbs.push(Orb::Bomb);
@@ -43,6 +43,7 @@ impl PlayerGameState {
             level,
             moonrocks: 0,
             cheddah: 0,
+            purchased_orbs: Vec::new(),
         }
     }
     pub fn health(&self) -> u32 { self.health }
@@ -122,22 +123,77 @@ impl PlayerGameState {
         *self = Self::default();
     }
 
+    pub fn complete_level(&mut self) {
+        // Award cheddah equal to points earned
+        self.cheddah += self.points;
+        info!("Level {} completed! Earned {} cheddah", self.level, self.points);
+        // Purchased orbs persist across levels - don't clear them
+    }
+
     pub fn advance_to_next_level(&mut self) {
         if self.level < 5 {
-            let current_moonrocks = self.moonrocks;
-            let current_cheddah = self.cheddah;
-            
             self.level += 1;
-            *self = Self::new_for_level(self.level);
-            
+            // Reset health, points and milestone for new level
+            self.health = 5;
             self.points = 0;
-            self.moonrocks = current_moonrocks;
-            self.cheddah = current_cheddah;
+            self.milestone = 5 + (self.level * 10);
+            
+            // Reset orbs to base amount (5 of each)
+            self.orbs.clear();
+            for _ in 0..5 {
+                self.orbs.push(Orb::Health);
+                self.orbs.push(Orb::Point);
+                self.orbs.push(Orb::Bomb);
+            }
+            
+            // Add ALL purchased orbs accumulated so far (they persist across levels)
+            for orb in &self.purchased_orbs {
+                self.orbs.push(*orb);
+            }
+            
+            // Don't clear purchased_orbs - they persist until game ends
+            
+            info!("Advanced to level {} with {} total orbs ({} purchased), health reset to 5", 
+                self.level, self.orbs.len(), self.purchased_orbs.len());
         }
     }
 
     pub fn is_final_level(&self) -> bool {
         self.level >= 5
+    }
+
+    pub fn can_afford_orb(&self, cost: u32) -> bool {
+        self.cheddah >= cost
+    }
+
+    pub fn purchase_health_orb(&mut self, cost: u32) -> bool {
+        if self.can_afford_orb(cost) {
+            self.cheddah -= cost;
+            self.purchased_orbs.push(Orb::Health);
+            info!("Purchased Health orb for {} cheddah", cost);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn purchase_point_orb(&mut self, cost: u32) -> bool {
+        if self.can_afford_orb(cost) {
+            self.cheddah -= cost;
+            self.purchased_orbs.push(Orb::Point);
+            info!("Purchased Point orb for {} cheddah", cost);
+            true
+        } else {
+            false
+        }
+    }
+    
+    pub fn purchased_orb_count(&self, orb_type: Orb) -> usize {
+        self.purchased_orbs.iter().filter(|&&orb| orb == orb_type).count()
+    }
+    
+    pub fn total_purchased_orbs(&self) -> usize {
+        self.purchased_orbs.len()
     }
 
     pub fn pull_orb(&mut self) -> Option<Orb> {

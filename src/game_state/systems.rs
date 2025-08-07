@@ -42,11 +42,14 @@ pub fn update_stats_display(
 }
 
 pub fn check_win_loss_conditions(
-    player_state: Option<Res<PlayerGameState>>,
+    mut player_state: Option<ResMut<PlayerGameState>>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    if let Some(state) = player_state {
+    if let Some(ref mut state) = player_state {
         if state.points >= state.milestone {
+            // Award cheddah for completing the level
+            state.complete_level();
+            
             if state.is_final_level() {
                 info!("Player wins the game! Completed level {} with {} points", state.level, state.points);
                 next_state.set(GameState::GameWon);

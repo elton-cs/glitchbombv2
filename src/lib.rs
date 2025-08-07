@@ -64,6 +64,12 @@ impl Plugin for GamePlugin {
             interface::level_complete::setup_level_complete_ui
         );
         
+        // Marketplace state entry - setup marketplace UI
+        app.add_systems(
+            OnEnter(GameState::Marketplace), 
+            interface::marketplace::setup_marketplace_ui
+        );
+        
         // Game end states - setup appropriate end screen UI
         app.add_systems(
             OnEnter(GameState::GameWon), 
@@ -85,22 +91,33 @@ impl Plugin for GamePlugin {
                 .run_if(in_state(GameState::Menu))
         );
         
-        // Playing update - handle input, update display, check win/loss (in order)
+        // Playing update - chain all systems with quit handler last to avoid resource conflicts
         app.add_systems(
             Update, 
             (
-                interface::playing::handle_quit_button, 
                 interface::playing::handle_pull_orb_button,
                 game_state::systems::update_stats_display, 
-                game_state::systems::check_win_loss_conditions
+                game_state::systems::check_win_loss_conditions,
+                interface::playing::handle_quit_button
             ).chain().run_if(in_state(GameState::Playing))
         );
 
-        // Level complete update - handle next level button
+        // Level complete update - handle go to market button
         app.add_systems(
             Update, 
-            interface::level_complete::handle_next_level_button
+            interface::level_complete::handle_go_to_market_button
                 .run_if(in_state(GameState::LevelComplete))
+        );
+        
+        // Marketplace update - handle purchases and next level button
+        app.add_systems(
+            Update, 
+            (
+                interface::marketplace::handle_buy_health_orb,
+                interface::marketplace::handle_buy_point_orb,
+                interface::marketplace::update_marketplace_stats,
+                interface::marketplace::handle_next_level_button
+            ).chain().run_if(in_state(GameState::Marketplace))
         );
         
         // Game end update - handle restart button for both win/loss states
@@ -145,6 +162,12 @@ impl Plugin for GamePlugin {
         app.add_systems(
             OnExit(GameState::LevelComplete), 
             interface::level_complete::cleanup_level_complete
+        );
+        
+        // Marketplace state cleanup
+        app.add_systems(
+            OnExit(GameState::Marketplace), 
+            interface::marketplace::cleanup_marketplace
         );
     }
 }

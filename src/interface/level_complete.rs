@@ -1,15 +1,18 @@
 use bevy::prelude::*;
-use super::{GameState, LevelCompleteUI, NextLevelButton};
+use super::{GameState, LevelCompleteUI};
 use crate::game_state::PlayerGameState;
+
+#[derive(Component)]
+pub struct GoToMarketButton;
 
 pub fn setup_level_complete_ui(
     mut commands: Commands,
     player_state: Option<Res<PlayerGameState>>,
 ) {
-    let (current_level, points_achieved, next_level) = if let Some(state) = player_state {
-        (state.level(), state.points(), state.level() + 1)
+    let (current_level, points_achieved) = if let Some(state) = player_state {
+        (state.level(), state.points())
     } else {
-        (1, 0, 2)
+        (1, 0)
     };
 
     commands.spawn((
@@ -54,12 +57,12 @@ pub fn setup_level_complete_ui(
             ));
 
             content_parent.spawn((
-                Text::new(format!("Advancing to Level {}", next_level)),
+                Text::new(format!("Earned {} Cheddah!", points_achieved)),
                 TextFont {
                     font_size: 20.0,
                     ..default()
                 },
-                TextColor(Color::srgb(0.8, 0.8, 0.8)),
+                TextColor(Color::srgb(0.8, 0.7, 0.2)),
             ));
         });
 
@@ -75,11 +78,11 @@ pub fn setup_level_complete_ui(
             },
             BackgroundColor(Color::srgb(0.2, 0.6, 0.2)),
             BorderColor(Color::srgb(0.4, 0.8, 0.4)),
-            NextLevelButton,
+            GoToMarketButton,
         ))
         .with_children(|button_parent| {
             button_parent.spawn((
-                Text::new("NEXT LEVEL"),
+                Text::new("GO TO MARKETPLACE"),
                 TextFont {
                     font_size: 28.0,
                     ..default()
@@ -90,22 +93,20 @@ pub fn setup_level_complete_ui(
     });
 }
 
-pub fn handle_next_level_button(
+pub fn handle_go_to_market_button(
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor, &mut BorderColor),
-        (Changed<Interaction>, With<NextLevelButton>),
+        (Changed<Interaction>, With<GoToMarketButton>),
     >,
-    mut player_state: Option<ResMut<PlayerGameState>>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    let mut button_pressed = false;
-    
     for (interaction, mut background_color, mut border_color) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
                 *background_color = BackgroundColor(Color::srgb(0.1, 0.4, 0.1));
                 *border_color = BorderColor(Color::srgb(0.2, 0.6, 0.2));
-                button_pressed = true;
+                info!("Going to marketplace");
+                next_state.set(GameState::Marketplace);
             }
             Interaction::Hovered => {
                 *background_color = BackgroundColor(Color::srgb(0.3, 0.7, 0.3));
@@ -116,14 +117,6 @@ pub fn handle_next_level_button(
                 *border_color = BorderColor(Color::srgb(0.4, 0.8, 0.4));
             }
         }
-    }
-    
-    if button_pressed {
-        if let Some(ref mut state) = player_state {
-            state.advance_to_next_level();
-            info!("Advanced to level {}", state.level());
-        }
-        next_state.set(GameState::Playing);
     }
 }
 

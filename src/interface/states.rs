@@ -6,6 +6,7 @@ pub enum GameState {
     Menu,
     Playing,
     LevelComplete,
+    Marketplace,
     GameWon,
     GameLost,
 }
