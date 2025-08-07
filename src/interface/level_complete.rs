@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use super::{GameState, LevelCompleteUI};
 use crate::game_state::PlayerGameState;
+use crate::game_state::orb::Orb;
 
 #[derive(Component)]
 pub struct GoToMarketButton;
@@ -9,7 +10,7 @@ pub fn setup_level_complete_ui(
     mut commands: Commands,
     player_state: Option<Res<PlayerGameState>>,
 ) {
-    let (current_level, points_achieved) = if let Some(state) = player_state {
+    let (current_level, points_achieved) = if let Some(ref state) = player_state {
         (state.level(), state.points())
     } else {
         (1, 0)
@@ -64,6 +65,75 @@ pub fn setup_level_complete_ui(
                 },
                 TextColor(Color::srgb(0.8, 0.7, 0.2)),
             ));
+
+            // Pull History Display
+            if let Some(ref state) = player_state {
+                content_parent.spawn((
+                    Node {
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::top(Val::Px(20.0)),
+                        ..default()
+                    },
+                ))
+                .with_children(|history_parent| {
+                    history_parent.spawn((
+                        Text::new("Last Pull History:"),
+                        TextFont {
+                            font_size: 16.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.7, 0.7, 0.7)),
+                    ));
+                    
+                    history_parent.spawn((
+                        Node {
+                            width: Val::Px(190.0), // Container width for 5 orbs (30px each + 10px gaps)
+                            height: Val::Px(30.0),
+                            flex_direction: FlexDirection::Row,
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            column_gap: Val::Px(10.0),
+                            margin: UiRect::top(Val::Px(5.0)),
+                            ..default()
+                        },
+                        BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.2)),
+                    ))
+                    .with_children(|container_parent| {
+                        // Show the last 5 orbs from pull history
+                        for orb in state.pull_history().iter() {
+                            let (color, symbol) = match orb {
+                                Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
+                                Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
+                                Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                            };
+                            
+                            container_parent.spawn((
+                                Node {
+                                    width: Val::Px(30.0),
+                                    height: Val::Px(30.0),
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
+                                    border: UiRect::all(Val::Px(2.0)),
+                                    ..default()
+                                },
+                                BackgroundColor(color.with_alpha(0.3)),
+                                BorderColor(color),
+                            ))
+                            .with_children(|orb_parent| {
+                                orb_parent.spawn((
+                                    Text::new(symbol),
+                                    TextFont {
+                                        font_size: 18.0,
+                                        ..default()
+                                    },
+                                    TextColor(Color::WHITE),
+                                ));
+                            });
+                        }
+                    });
+                });
+            }
         });
 
         parent.spawn((
