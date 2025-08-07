@@ -23,3 +23,11 @@ pub struct RestartButton;
 
 #[derive(Component)]
 pub struct LevelCompleteUI;
+
+#[derive(Component)]
+pub struct PullHistoryContainer;
+
+#[derive(Component)]
+pub struct PullHistoryOrb {
+    pub _index: usize,
+}

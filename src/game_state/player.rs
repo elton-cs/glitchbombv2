@@ -13,6 +13,7 @@ pub struct PlayerGameState {
     pub moonrocks: u32,
     pub cheddah: u32,
     pub purchased_orbs: Vec<Orb>,  // Track orbs purchased in marketplace
+    pub pull_history: Vec<Orb>,     // Track last 5 orbs pulled
 }
 
 impl Default for PlayerGameState {
@@ -44,6 +45,7 @@ impl PlayerGameState {
             moonrocks: 0,
             cheddah: 0,
             purchased_orbs: Vec::new(),
+            pull_history: Vec::new(),
         }
     }
     pub fn health(&self) -> u32 { self.health }
@@ -54,6 +56,7 @@ impl PlayerGameState {
     pub fn level(&self) -> u32 { self.level }
     pub fn moonrocks(&self) -> u32 { self.moonrocks }
     pub fn cheddah(&self) -> u32 { self.cheddah }
+    pub fn pull_history(&self) -> &Vec<Orb> { &self.pull_history }
 
     pub fn set_health(&mut self, value: u32) { self.health = value; }
     pub fn set_points(&mut self, value: u32) { self.points = value; }
@@ -121,6 +124,7 @@ impl PlayerGameState {
     
     pub fn reset_to_defaults(&mut self) {
         *self = Self::default();
+        self.pull_history.clear();
     }
 
     pub fn complete_level(&mut self) {
@@ -144,6 +148,9 @@ impl PlayerGameState {
             self.health = 5;
             self.points = 0;
             self.milestone = 5 + (self.level * 10);
+            
+            // Clear pull history for new level
+            self.pull_history.clear();
             
             // Reset orbs to base amount (5 of each)
             self.orbs.clear();
@@ -214,6 +221,12 @@ impl PlayerGameState {
         let random_index = rng.gen_range(0..self.orbs.len());
         
         let orb = self.orbs.remove(random_index);
+        
+        // Add to pull history (keep only last 5)
+        self.pull_history.push(orb);
+        if self.pull_history.len() > 5 {
+            self.pull_history.remove(0);
+        }
         
         match orb {
             Orb::Health => {

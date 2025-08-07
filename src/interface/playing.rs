@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-use super::{GameState, PlayingUI, QuitButton, PullOrbButton, StatDisplay, StatType};
+use super::{GameState, PlayingUI, QuitButton, PullOrbButton, StatDisplay, StatType, PullHistoryContainer, PullHistoryOrb};
+use crate::game_state::orb::Orb;
 
 pub fn setup_playing_ui(mut commands: Commands) {
     commands.spawn((
@@ -103,6 +104,37 @@ pub fn setup_playing_ui(mut commands: Commands) {
                 },
                 TextColor(Color::WHITE),
                 StatDisplay { stat_type: StatType::Cheddah },
+            ));
+        });
+
+        // Pull History Display
+        parent.spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                margin: UiRect::bottom(Val::Px(20.0)),
+                ..default()
+            },
+        ))
+        .with_children(|history_parent| {
+            history_parent.spawn((
+                Text::new("Pull History:"),
+                TextFont {
+                    font_size: 16.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.7, 0.7, 0.7)),
+            ));
+            
+            history_parent.spawn((
+                Node {
+                    flex_direction: FlexDirection::Row,
+                    align_items: AlignItems::Center,
+                    column_gap: Val::Px(10.0),
+                    margin: UiRect::top(Val::Px(5.0)),
+                    ..default()
+                },
+                PullHistoryContainer,
             ));
         });
 
@@ -226,4 +258,83 @@ pub fn cleanup_playing(mut commands: Commands, playing_query: Query<Entity, With
     for entity in &playing_query {
         commands.entity(entity).despawn();
     }
+}
+
+pub fn update_pull_history(
+    mut commands: Commands,
+    player_state: Option<Res<crate::game_state::PlayerGameState>>,
+    history_container: Query<Entity, With<PullHistoryContainer>>,
+    existing_orbs: Query<Entity, With<PullHistoryOrb>>,
+) {
+    let Some(state) = player_state else { return };
+    
+    // Clear existing orb displays
+    for entity in &existing_orbs {
+        commands.entity(entity).despawn();
+    }
+    
+    // Get the history container
+    let Ok(container) = history_container.single() else { return };
+    
+    // Create new orb displays
+    commands.entity(container).with_children(|parent| {
+        for (index, orb) in state.pull_history().iter().enumerate() {
+            let (color, symbol) = match orb {
+                Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
+                Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
+                Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+            };
+            
+            parent.spawn((
+                Node {
+                    width: Val::Px(30.0),
+                    height: Val::Px(30.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    border: UiRect::all(Val::Px(2.0)),
+                    ..default()
+                },
+                BackgroundColor(color.with_alpha(0.3)),
+                BorderColor(color),
+                PullHistoryOrb { _index: index },
+            ))
+            .with_children(|orb_parent| {
+                orb_parent.spawn((
+                    Text::new(symbol),
+                    TextFont {
+                        font_size: 18.0,
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                ));
+            });
+        }
+        
+        // Add empty slots for remaining history
+        for index in state.pull_history().len()..5 {
+            parent.spawn((
+                Node {
+                    width: Val::Px(30.0),
+                    height: Val::Px(30.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    border: UiRect::all(Val::Px(1.0)),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.2, 0.2, 0.2, 0.2)),
+                BorderColor(Color::srgba(0.4, 0.4, 0.4, 0.3)),
+                PullHistoryOrb { _index: index },
+            ))
+            .with_children(|orb_parent| {
+                orb_parent.spawn((
+                    Text::new("?"),
+                    TextFont {
+                        font_size: 14.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgba(0.5, 0.5, 0.5, 0.5)),
+                ));
+            });
+        }
+    });
 }

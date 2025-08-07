@@ -96,6 +96,7 @@ impl Plugin for GamePlugin {
             Update, 
             (
                 interface::playing::handle_pull_orb_button,
+                interface::playing::update_pull_history,
                 game_state::systems::update_stats_display, 
                 game_state::systems::check_win_loss_conditions,
             ).chain().run_if(in_state(GameState::Playing))
