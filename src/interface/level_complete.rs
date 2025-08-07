@@ -152,12 +152,17 @@ pub fn setup_level_complete_ui(
         ))
         .with_children(|button_parent| {
             button_parent.spawn((
-                Text::new("GO TO MARKETPLACE"),
+                Text::new("SHOP"),
                 TextFont {
-                    font_size: 28.0,
+                    font_size: 24.0,
                     ..default()
                 },
                 TextColor(Color::WHITE),
+                Node {
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
             ));
         });
     });
