@@ -25,7 +25,9 @@ pub struct RestartButton;
 pub struct LevelCompleteUI;
 
 #[derive(Component)]
-pub struct PullHistoryContainer;
+pub struct PullHistoryContainer {
+    pub last_total_pulls: u32,
+}
 
 #[derive(Component)]
 pub struct PullHistoryOrb {

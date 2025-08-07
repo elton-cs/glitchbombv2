@@ -14,6 +14,7 @@ pub struct PlayerGameState {
     pub cheddah: u32,
     pub purchased_orbs: Vec<Orb>,  // Track orbs purchased in marketplace
     pub pull_history: Vec<Orb>,     // Track last 5 orbs pulled
+    pub total_pulls: u32,           // Track total number of pulls made
 }
 
 impl Default for PlayerGameState {
@@ -46,6 +47,7 @@ impl PlayerGameState {
             cheddah: 0,
             purchased_orbs: Vec::new(),
             pull_history: Vec::new(),
+            total_pulls: 0,
         }
     }
     pub fn health(&self) -> u32 { self.health }
@@ -57,6 +59,7 @@ impl PlayerGameState {
     pub fn moonrocks(&self) -> u32 { self.moonrocks }
     pub fn cheddah(&self) -> u32 { self.cheddah }
     pub fn pull_history(&self) -> &Vec<Orb> { &self.pull_history }
+    pub fn total_pulls(&self) -> u32 { self.total_pulls }
 
     pub fn set_health(&mut self, value: u32) { self.health = value; }
     pub fn set_points(&mut self, value: u32) { self.points = value; }
@@ -125,6 +128,7 @@ impl PlayerGameState {
     pub fn reset_to_defaults(&mut self) {
         *self = Self::default();
         self.pull_history.clear();
+        self.total_pulls = 0;
     }
 
     pub fn complete_level(&mut self) {
@@ -151,6 +155,7 @@ impl PlayerGameState {
             
             // Clear pull history for new level
             self.pull_history.clear();
+            self.total_pulls = 0;
             
             // Reset orbs to base amount (5 of each)
             self.orbs.clear();
@@ -227,6 +232,7 @@ impl PlayerGameState {
         if self.pull_history.len() > 5 {
             self.pull_history.remove(0);
         }
+        self.total_pulls += 1;
         
         match orb {
             Orb::Health => {

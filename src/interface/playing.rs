@@ -139,7 +139,7 @@ pub fn setup_playing_ui(
                     ..default()
                 },
                 BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.2)),
-                PullHistoryContainer,
+                PullHistoryContainer { last_total_pulls: player_state.as_ref().map(|s| s.total_pulls()).unwrap_or(0) },
             ))
             .with_children(|container_parent| {
                 // Initialize with existing pull history if any
@@ -310,87 +310,79 @@ pub fn cleanup_playing(mut commands: Commands, playing_query: Query<Entity, With
 pub fn update_pull_history(
     mut commands: Commands,
     player_state: Option<Res<crate::game_state::PlayerGameState>>,
-    history_container: Query<Entity, With<PullHistoryContainer>>,
-    mut existing_orbs: Query<(Entity, &mut PullHistoryOrb)>,
+    mut history_container: Query<(Entity, &mut PullHistoryContainer)>,
+    existing_orbs: Query<Entity, With<PullHistoryOrb>>,
     _time: Res<Time>,
 ) {
     let Some(state) = player_state else { return };
-    let Ok(container) = history_container.single() else { return };
+    let Ok((container_entity, mut container)) = history_container.single_mut() else { return };
     
-    let history = state.pull_history();
-    let current_count = existing_orbs.iter().count();
-    let new_count = history.len();
+    let current_total_pulls = state.total_pulls();
+    let last_tracked_pulls = container.last_total_pulls;
     
-    // Check if a new orb was added
-    if new_count > current_count && new_count > 0 {
-        // If we have 5 orbs already, remove the oldest (leftmost) one
-        if current_count >= 5 {
-            // Find and remove the orb at position 0 (leftmost)
-            for (entity, orb_data) in &existing_orbs {
-                if orb_data.position == 0 {
-                    commands.entity(entity).despawn();
-                    break;
-                }
-            }
-            
-            // Shift all remaining orbs left (decrease position)
-            for (_, mut orb_data) in &mut existing_orbs {
-                if orb_data.position > 0 {
-                    orb_data.position -= 1;
-                    orb_data.animation_timer = 0.0; // Reset animation
-                }
-            }
+    // Check if a new pull was made
+    if current_total_pulls > last_tracked_pulls {
+        // Clear all existing orbs and rebuild from history
+        for entity in &existing_orbs {
+            commands.entity(entity).despawn();
         }
         
-        // Add the new orb at the rightmost position
-        let new_orb = history[history.len() - 1];
-        let (color, symbol) = match new_orb {
-            Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
-            Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
-            Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
-        };
+        // Update the container's tracking
+        container.last_total_pulls = current_total_pulls;
         
-        // Calculate the position for the new orb (rightmost)
-        let new_position = if current_count >= 5 { 4 } else { current_count };
-        
-        commands.entity(container).with_children(|parent| {
-            parent.spawn((
-                Node {
-                    width: Val::Px(30.0),
-                    height: Val::Px(30.0),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    border: UiRect::all(Val::Px(2.0)),
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(200.0), // Start off-screen to the right
-                    ..default()
-                },
-                BackgroundColor(color.with_alpha(0.3)),
-                BorderColor(color),
-                PullHistoryOrb {
-                    _orb_type: new_orb,
-                    position: new_position,
-                    animation_timer: 0.0,
-                },
-            ))
-            .with_children(|orb_parent| {
-                orb_parent.spawn((
-                    Text::new(symbol),
-                    TextFont {
-                        font_size: 18.0,
+        // Rebuild all orbs from current history with animations
+        let history = state.pull_history();
+        commands.entity(container_entity).with_children(|parent| {
+            for (index, orb) in history.iter().enumerate() {
+                let (color, symbol) = match orb {
+                    Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
+                    Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
+                    Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                };
+                
+                // Check if this is the new orb (rightmost)
+                let is_new_orb = index == history.len() - 1;
+                let start_x = if is_new_orb { 200.0 } else { index as f32 * 40.0 };
+                
+                parent.spawn((
+                    Node {
+                        width: Val::Px(30.0),
+                        height: Val::Px(30.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        border: UiRect::all(Val::Px(2.0)),
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(start_x),
                         ..default()
                     },
-                    TextColor(Color::WHITE),
-                ));
-            });
+                    BackgroundColor(color.with_alpha(0.3)),
+                    BorderColor(color),
+                    PullHistoryOrb {
+                        _orb_type: *orb,
+                        position: index,
+                        animation_timer: if is_new_orb { 0.0 } else { 1.0 },
+                    },
+                ))
+                .with_children(|orb_parent| {
+                    orb_parent.spawn((
+                        Text::new(symbol),
+                        TextFont {
+                            font_size: 18.0,
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                    ));
+                });
+            }
         });
     }
     
     // Clear all orbs if history is empty (level reset)
-    if new_count == 0 && current_count > 0 {
-        for (entity, _) in &existing_orbs {
+    if current_total_pulls == 0 && !existing_orbs.is_empty() {
+        for entity in &existing_orbs {
             commands.entity(entity).despawn();
         }
+        container.last_total_pulls = 0;
     }
 }
 
