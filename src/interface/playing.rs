@@ -160,12 +160,12 @@ pub fn setup_playing_ui(mut commands: Commands) {
 }
 
 pub fn handle_quit_button(
-    mut commands: Commands,
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor, &mut BorderColor),
         (Changed<Interaction>, With<QuitButton>),
     >,
     mut next_state: ResMut<NextState<GameState>>,
+    mut player_state: Option<ResMut<crate::game_state::PlayerGameState>>,
 ) {
     for (interaction, mut background_color, mut border_color) in &mut interaction_query {
         match *interaction {
@@ -173,9 +173,11 @@ pub fn handle_quit_button(
                 *background_color = BackgroundColor(Color::srgb(0.1, 0.1, 0.1));
                 *border_color = BorderColor(Color::srgb(0.3, 0.3, 0.3));
                 
-                // Reset player state when quitting
-                commands.remove_resource::<crate::game_state::PlayerGameState>();
-                info!("Quit button pressed - resetting game state");
+                // Reset player state to defaults when quitting mid-game
+                if let Some(ref mut state) = player_state {
+                    state.reset_to_defaults();
+                    info!("Quit button pressed - resetting game state to defaults");
+                }
                 
                 next_state.set(GameState::Menu);
             }

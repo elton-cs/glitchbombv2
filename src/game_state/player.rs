@@ -132,6 +132,13 @@ impl PlayerGameState {
 
     pub fn advance_to_next_level(&mut self) {
         if self.level < 5 {
+            // Check if we're already at full health and zero points (indicators of fresh level start)
+            // This prevents duplicate calls from re-adding orbs
+            if self.health == 5 && self.points == 0 {
+                info!("Already at start of level {}, skipping duplicate advance", self.level);
+                return;
+            }
+            
             self.level += 1;
             // Reset health, points and milestone for new level
             self.health = 5;
@@ -155,6 +162,8 @@ impl PlayerGameState {
             
             info!("Advanced to level {} with {} total orbs ({} purchased), health reset to 5", 
                 self.level, self.orbs.len(), self.purchased_orbs.len());
+        } else {
+            info!("Cannot advance beyond level 5");
         }
     }
 

@@ -91,15 +91,22 @@ impl Plugin for GamePlugin {
                 .run_if(in_state(GameState::Menu))
         );
         
-        // Playing update - chain all systems with quit handler last to avoid resource conflicts
+        // Playing update - separate quit handler from game logic to prevent conflicts
         app.add_systems(
             Update, 
             (
                 interface::playing::handle_pull_orb_button,
                 game_state::systems::update_stats_display, 
                 game_state::systems::check_win_loss_conditions,
-                interface::playing::handle_quit_button
             ).chain().run_if(in_state(GameState::Playing))
+        );
+        
+        // Run quit handler separately to ensure it can override other state transitions
+        app.add_systems(
+            Update,
+            interface::playing::handle_quit_button
+                .run_if(in_state(GameState::Playing))
+                .after(game_state::systems::check_win_loss_conditions)
         );
 
         // Level complete update - handle go to market button

@@ -8,12 +8,23 @@ pub fn setup_game(
 ) {
     info!("Setting up game state");
     
-    // Only create new PlayerGameState if one doesn't exist (first time playing)
-    if player_state.is_none() {
-        info!("Creating new PlayerGameState");
-        commands.insert_resource(PlayerGameState::default());
-    } else {
-        info!("PlayerGameState already exists for level {}", player_state.unwrap().level());
+    // Only create new PlayerGameState if one doesn't exist
+    match player_state {
+        None => {
+            info!("Creating new PlayerGameState for first game");
+            commands.insert_resource(PlayerGameState::default());
+        }
+        Some(state) => {
+            // Check if this is a fresh game start (level 1, full health, zero points)
+            // vs continuing from marketplace (where state should be preserved)
+            if state.level() == 1 && state.health() == 5 && state.points() == 0 && state.total_orb_count() == 15 {
+                info!("PlayerGameState exists and appears to be fresh start, keeping it");
+            } else {
+                info!("Continuing game at level {} with {} health, {} points", 
+                    state.level(), state.health(), state.points());
+            }
+            // Resource already exists and is valid, no action needed
+        }
     }
 }
 
