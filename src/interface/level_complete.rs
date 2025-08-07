@@ -103,9 +103,9 @@ pub fn setup_level_complete_ui(
                         // Show the last 5 orbs from pull history
                         for orb in state.pull_history().iter() {
                             let (color, symbol) = match orb {
-                                Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
-                                Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
-                                Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                                Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), "H"),
+                                Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), "P"),
+                                Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), "B"),
                             };
                             
                             container_parent.spawn((

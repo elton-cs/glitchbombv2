@@ -319,8 +319,8 @@ pub fn update_marketplace_stats(
             **text = match stat_display.stat_type {
                 StatType::Cheddah => format!("Cheddah: {}", state.cheddah()),
                 StatType::Orbs => format!("Total Purchased Orbs: H:{} P:{}", 
-                    state.purchased_orb_count(crate::game_state::orb::Orb::Health), 
-                    state.purchased_orb_count(crate::game_state::orb::Orb::Point)
+                    state.purchased_orb_count(crate::game_state::orb::Orb::Health(1)), 
+                    state.purchased_orb_count(crate::game_state::orb::Orb::Point(1))
                 ),
                 _ => continue,
             };

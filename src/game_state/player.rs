@@ -27,12 +27,7 @@ impl Default for PlayerGameState {
 impl PlayerGameState {
     pub fn new_for_level(level: u32) -> Self {
         // Base orbs: always 5 of each type per level
-        let mut orbs = Vec::new();
-        for _ in 0..5 {
-            orbs.push(Orb::Health);
-            orbs.push(Orb::Point);
-            orbs.push(Orb::Bomb);
-        }
+        let orbs = Orb::create_base_set();
         
         let milestone = 5 + (level * 10);
         
@@ -88,7 +83,7 @@ impl PlayerGameState {
         self.points = self.points.saturating_sub(amount); 
     }
     pub fn remove_orb(&mut self, orb_type: Orb) -> bool {
-        if let Some(pos) = self.orbs.iter().position(|&orb| orb == orb_type) {
+        if let Some(pos) = self.orbs.iter().position(|&orb| std::mem::discriminant(&orb) == std::mem::discriminant(&orb_type)) {
             self.orbs.remove(pos);
             true
         } else {
@@ -105,22 +100,22 @@ impl PlayerGameState {
     pub fn is_dead(&self) -> bool { self.health == 0 }
     pub fn is_at_max_health(&self) -> bool { self.health == 5 }
     pub fn has_orb(&self, orb_type: Orb) -> bool { 
-        self.orbs.contains(&orb_type) 
+        self.orbs.iter().any(|&orb| std::mem::discriminant(&orb) == std::mem::discriminant(&orb_type))
     }
     pub fn orb_count(&self, orb_type: Orb) -> usize {
-        self.orbs.iter().filter(|&&orb| orb == orb_type).count()
+        self.orbs.iter().filter(|&&orb| std::mem::discriminant(&orb) == std::mem::discriminant(&orb_type)).count()
     }
     pub fn total_orb_count(&self) -> usize {
         self.orbs.len()
     }
     pub fn health_orb_count(&self) -> usize {
-        self.orb_count(Orb::Health)
+        self.orb_count(Orb::Health(1))
     }
     pub fn point_orb_count(&self) -> usize {
-        self.orb_count(Orb::Point)
+        self.orb_count(Orb::Point(1))
     }
     pub fn bomb_orb_count(&self) -> usize {
-        self.orb_count(Orb::Bomb)
+        self.orb_count(Orb::Bomb(1))
     }
     pub fn has_moonrocks(&self, count: u32) -> bool { self.moonrocks >= count }
     pub fn has_cheddah(&self, count: u32) -> bool { self.cheddah >= count }
@@ -158,12 +153,7 @@ impl PlayerGameState {
             self.total_pulls = 0;
             
             // Reset orbs to base amount (5 of each)
-            self.orbs.clear();
-            for _ in 0..5 {
-                self.orbs.push(Orb::Health);
-                self.orbs.push(Orb::Point);
-                self.orbs.push(Orb::Bomb);
-            }
+            self.orbs = Orb::create_base_set();
             
             // Add ALL purchased orbs accumulated so far (they persist across levels)
             for orb in &self.purchased_orbs {
@@ -190,7 +180,7 @@ impl PlayerGameState {
     pub fn purchase_health_orb(&mut self, cost: u32) -> bool {
         if self.can_afford_orb(cost) {
             self.cheddah -= cost;
-            self.purchased_orbs.push(Orb::Health);
+            self.purchased_orbs.push(Orb::Health(1));
             info!("Purchased Health orb for {} cheddah", cost);
             true
         } else {
@@ -201,7 +191,7 @@ impl PlayerGameState {
     pub fn purchase_point_orb(&mut self, cost: u32) -> bool {
         if self.can_afford_orb(cost) {
             self.cheddah -= cost;
-            self.purchased_orbs.push(Orb::Point);
+            self.purchased_orbs.push(Orb::Point(5));
             info!("Purchased Point orb for {} cheddah", cost);
             true
         } else {
@@ -210,7 +200,7 @@ impl PlayerGameState {
     }
     
     pub fn purchased_orb_count(&self, orb_type: Orb) -> usize {
-        self.purchased_orbs.iter().filter(|&&orb| orb == orb_type).count()
+        self.purchased_orbs.iter().filter(|&&orb| std::mem::discriminant(&orb) == std::mem::discriminant(&orb_type)).count()
     }
     
     pub fn total_purchased_orbs(&self) -> usize {
@@ -235,21 +225,21 @@ impl PlayerGameState {
         self.total_pulls += 1;
         
         match orb {
-            Orb::Health => {
+            Orb::Health(value) => {
                 if !self.is_at_max_health() {
-                    self.add_health(1);
-                    info!("Consumed Health orb: +1 health (now {})", self.health);
+                    self.add_health(value);
+                    info!("Consumed Health orb: +{} health (now {})", value, self.health);
                 } else {
                     info!("Consumed Health orb: no effect (health already at max)");
                 }
             },
-            Orb::Point => {
-                self.add_points(5);
-                info!("Consumed Point orb: +5 points");
+            Orb::Point(value) => {
+                self.add_points(value);
+                info!("Consumed Point orb: +{} points", value);
             },
-            Orb::Bomb => {
-                self.subtract_health(2);
-                info!("Consumed Bomb orb: -2 health");
+            Orb::Bomb(value) => {
+                self.subtract_health(value);
+                info!("Consumed Bomb orb: -{} health", value);
             },
         }
 

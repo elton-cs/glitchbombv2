@@ -150,9 +150,9 @@ pub fn setup_playing_ui(
                 if let Some(ref state) = player_state {
                     if let Some(latest_orb) = state.pull_history().last() {
                         let (color, symbol) = match latest_orb {
-                            Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
-                            Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
-                            Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                            Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), "H"),
+                            Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), "P"),
+                            Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), "B"),
                         };
                         
                         orb_parent.spawn((
@@ -222,9 +222,9 @@ pub fn setup_playing_ui(
                 if let Some(ref state) = player_state {
                     for (index, orb) in state.pull_history().iter().enumerate() {
                         let (color, symbol) = match orb {
-                            Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
-                            Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
-                            Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                            Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), "H"),
+                            Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), "P"),
+                            Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), "B"),
                         };
                         
                         container_parent.spawn((
@@ -411,9 +411,9 @@ pub fn update_pull_history(
         commands.entity(container_entity).with_children(|parent| {
             for (index, orb) in history.iter().enumerate() {
                 let (color, symbol) = match orb {
-                    Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
-                    Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
-                    Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                    Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), "H"),
+                    Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), "P"),
+                    Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), "B"),
                 };
                 
                 // Check if this is the new orb (rightmost)
@@ -513,9 +513,9 @@ pub fn update_latest_orb_display(
         commands.entity(display_entity).with_children(|parent| {
             if let Some(latest_orb) = state.pull_history().last() {
                 let (color, symbol) = match latest_orb {
-                    Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
-                    Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
-                    Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                    Orb::Health(_) => (Color::srgb(0.2, 0.8, 0.2), "H"),
+                    Orb::Point(_) => (Color::srgb(0.2, 0.2, 0.8), "P"),
+                    Orb::Bomb(_) => (Color::srgb(0.8, 0.2, 0.2), "B"),
                 };
                 
                 // Update the display's background color to match the orb
