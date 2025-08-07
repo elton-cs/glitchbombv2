@@ -35,3 +35,8 @@ pub struct PullHistoryOrb {
     pub position: usize,
     pub animation_timer: f32,
 }
+
+#[derive(Component)]
+pub struct LatestOrbDisplay {
+    pub last_total_pulls: u32,
+}

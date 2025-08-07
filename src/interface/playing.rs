@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use super::{GameState, PlayingUI, QuitButton, PullOrbButton, StatDisplay, StatType, PullHistoryContainer, PullHistoryOrb};
+use super::{GameState, PlayingUI, QuitButton, PullOrbButton, StatDisplay, StatType, PullHistoryContainer, PullHistoryOrb, LatestOrbDisplay};
 use crate::game_state::orb::Orb;
 
 pub fn setup_playing_ui(
@@ -108,6 +108,82 @@ pub fn setup_playing_ui(
                 TextColor(Color::WHITE),
                 StatDisplay { stat_type: StatType::Cheddah },
             ));
+        });
+
+        // Latest Orb Display
+        parent.spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                margin: UiRect::bottom(Val::Px(20.0)),
+                ..default()
+            },
+        ))
+        .with_children(|latest_parent| {
+            latest_parent.spawn((
+                Text::new("Latest Pull:"),
+                TextFont {
+                    font_size: 16.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.7, 0.7, 0.7)),
+            ));
+            
+            latest_parent.spawn((
+                Node {
+                    width: Val::Px(60.0),
+                    height: Val::Px(60.0),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    border: UiRect::all(Val::Px(3.0)),
+                    margin: UiRect::top(Val::Px(5.0)),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.2, 0.2, 0.2, 0.5)),
+                BorderColor(Color::srgb(0.5, 0.5, 0.5)),
+                LatestOrbDisplay { 
+                    last_total_pulls: player_state.as_ref().map(|s| s.total_pulls()).unwrap_or(0) 
+                },
+            ))
+            .with_children(|orb_parent| {
+                // Show the latest orb if there is one
+                if let Some(ref state) = player_state {
+                    if let Some(latest_orb) = state.pull_history().last() {
+                        let (color, symbol) = match latest_orb {
+                            Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
+                            Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
+                            Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                        };
+                        
+                        orb_parent.spawn((
+                            Text::new(symbol),
+                            TextFont {
+                                font_size: 36.0,
+                                ..default()
+                            },
+                            TextColor(color),
+                        ));
+                    } else {
+                        orb_parent.spawn((
+                            Text::new("?"),
+                            TextFont {
+                                font_size: 36.0,
+                                ..default()
+                            },
+                            TextColor(Color::srgb(0.5, 0.5, 0.5)),
+                        ));
+                    }
+                } else {
+                    orb_parent.spawn((
+                        Text::new("?"),
+                        TextFont {
+                            font_size: 36.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.5, 0.5, 0.5)),
+                    ));
+                }
+            });
         });
 
         // Pull History Display
@@ -403,5 +479,96 @@ pub fn animate_pull_history(
         let new_x = current_x + (target_x - current_x) * t;
         
         node.left = Val::Px(new_x);
+    }
+}
+
+pub fn update_latest_orb_display(
+    mut commands: Commands,
+    player_state: Option<Res<crate::game_state::PlayerGameState>>,
+    mut latest_orb_query: Query<(Entity, &mut LatestOrbDisplay, &mut BackgroundColor, &mut BorderColor)>,
+    children_query: Query<&Children>,
+    text_query: Query<Entity, With<Text>>,
+) {
+    let Some(state) = player_state else { return };
+    let Ok((display_entity, mut display_component, mut bg_color, mut border_color)) = latest_orb_query.single_mut() else { return };
+    
+    let current_total_pulls = state.total_pulls();
+    let last_tracked_pulls = display_component.last_total_pulls;
+    
+    // Check if a new pull was made
+    if current_total_pulls > last_tracked_pulls {
+        // Update the component's tracking
+        display_component.last_total_pulls = current_total_pulls;
+        
+        // Clear existing text children
+        if let Ok(children) = children_query.get(display_entity) {
+            for child in children.iter() {
+                if text_query.get(child).is_ok() {
+                    commands.entity(child).despawn();
+                }
+            }
+        }
+        
+        // Add new text for the latest orb
+        commands.entity(display_entity).with_children(|parent| {
+            if let Some(latest_orb) = state.pull_history().last() {
+                let (color, symbol) = match latest_orb {
+                    Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
+                    Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
+                    Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                };
+                
+                // Update the display's background color to match the orb
+                *bg_color = BackgroundColor(color.with_alpha(0.3));
+                *border_color = BorderColor(color);
+                
+                parent.spawn((
+                    Text::new(symbol),
+                    TextFont {
+                        font_size: 36.0,
+                        ..default()
+                    },
+                    TextColor(color),
+                ));
+            } else {
+                parent.spawn((
+                    Text::new("?"),
+                    TextFont {
+                        font_size: 36.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.5, 0.5, 0.5)),
+                ));
+            }
+        });
+    }
+    
+    // Clear display if history is empty (level reset)
+    if current_total_pulls == 0 && display_component.last_total_pulls > 0 {
+        display_component.last_total_pulls = 0;
+        
+        // Reset to default appearance
+        *bg_color = BackgroundColor(Color::srgba(0.2, 0.2, 0.2, 0.5));
+        *border_color = BorderColor(Color::srgb(0.5, 0.5, 0.5));
+        
+        // Clear children and add default "?" text
+        if let Ok(children) = children_query.get(display_entity) {
+            for child in children.iter() {
+                if text_query.get(child).is_ok() {
+                    commands.entity(child).despawn();
+                }
+            }
+        }
+        
+        commands.entity(display_entity).with_children(|parent| {
+            parent.spawn((
+                Text::new("?"),
+                TextFont {
+                    font_size: 36.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.5, 0.5, 0.5)),
+            ));
+        });
     }
 }
