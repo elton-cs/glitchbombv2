@@ -3,8 +3,9 @@
 ## Build Commands
 
 For this Bevy project, use:
-- `bevy build web` - For web compilation and checking
+- `bevy build web` - ALWAYS use this for checking compile errors and building
 - NOT `cargo run` or `cargo build` - These are too slow for development iteration
+- NOT `cargo check` - Use `bevy build web` instead
 
 ## UI/Interface Guidelines
 

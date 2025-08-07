@@ -2,7 +2,10 @@ use bevy::prelude::*;
 use super::{GameState, PlayingUI, QuitButton, PullOrbButton, StatDisplay, StatType, PullHistoryContainer, PullHistoryOrb};
 use crate::game_state::orb::Orb;
 
-pub fn setup_playing_ui(mut commands: Commands) {
+pub fn setup_playing_ui(
+    mut commands: Commands,
+    player_state: Option<Res<crate::game_state::PlayerGameState>>,
+) {
     commands.spawn((
         Node {
             width: Val::Percent(100.0),
@@ -128,14 +131,58 @@ pub fn setup_playing_ui(mut commands: Commands) {
             
             history_parent.spawn((
                 Node {
-                    flex_direction: FlexDirection::Row,
-                    align_items: AlignItems::Center,
-                    column_gap: Val::Px(10.0),
+                    width: Val::Px(190.0), // Container width for 5 orbs (30px each + 10px gaps)
+                    height: Val::Px(30.0),
+                    position_type: PositionType::Relative,
+                    overflow: Overflow::clip(), // Hide orbs that slide out
                     margin: UiRect::top(Val::Px(5.0)),
                     ..default()
                 },
+                BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.2)),
                 PullHistoryContainer,
-            ));
+            ))
+            .with_children(|container_parent| {
+                // Initialize with existing pull history if any
+                if let Some(ref state) = player_state {
+                    for (index, orb) in state.pull_history().iter().enumerate() {
+                        let (color, symbol) = match orb {
+                            Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
+                            Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
+                            Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+                        };
+                        
+                        container_parent.spawn((
+                            Node {
+                                width: Val::Px(30.0),
+                                height: Val::Px(30.0),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
+                                border: UiRect::all(Val::Px(2.0)),
+                                position_type: PositionType::Absolute,
+                                left: Val::Px(index as f32 * 40.0), // Position based on index
+                                ..default()
+                            },
+                            BackgroundColor(color.with_alpha(0.3)),
+                            BorderColor(color),
+                            PullHistoryOrb {
+                                _orb_type: *orb,
+                                position: index,
+                                animation_timer: 1.0, // Already in position
+                            },
+                        ))
+                        .with_children(|orb_parent| {
+                            orb_parent.spawn((
+                                Text::new(symbol),
+                                TextFont {
+                                    font_size: 18.0,
+                                    ..default()
+                                },
+                                TextColor(Color::WHITE),
+                            ));
+                        });
+                    }
+                }
+            });
         });
 
         parent.spawn((
@@ -264,27 +311,49 @@ pub fn update_pull_history(
     mut commands: Commands,
     player_state: Option<Res<crate::game_state::PlayerGameState>>,
     history_container: Query<Entity, With<PullHistoryContainer>>,
-    existing_orbs: Query<Entity, With<PullHistoryOrb>>,
+    mut existing_orbs: Query<(Entity, &mut PullHistoryOrb)>,
+    _time: Res<Time>,
 ) {
     let Some(state) = player_state else { return };
-    
-    // Clear existing orb displays
-    for entity in &existing_orbs {
-        commands.entity(entity).despawn();
-    }
-    
-    // Get the history container
     let Ok(container) = history_container.single() else { return };
     
-    // Create new orb displays
-    commands.entity(container).with_children(|parent| {
-        for (index, orb) in state.pull_history().iter().enumerate() {
-            let (color, symbol) = match orb {
-                Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
-                Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
-                Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
-            };
+    let history = state.pull_history();
+    let current_count = existing_orbs.iter().count();
+    let new_count = history.len();
+    
+    // Check if a new orb was added
+    if new_count > current_count && new_count > 0 {
+        // If we have 5 orbs already, remove the oldest (leftmost) one
+        if current_count >= 5 {
+            // Find and remove the orb at position 0 (leftmost)
+            for (entity, orb_data) in &existing_orbs {
+                if orb_data.position == 0 {
+                    commands.entity(entity).despawn();
+                    break;
+                }
+            }
             
+            // Shift all remaining orbs left (decrease position)
+            for (_, mut orb_data) in &mut existing_orbs {
+                if orb_data.position > 0 {
+                    orb_data.position -= 1;
+                    orb_data.animation_timer = 0.0; // Reset animation
+                }
+            }
+        }
+        
+        // Add the new orb at the rightmost position
+        let new_orb = history[history.len() - 1];
+        let (color, symbol) = match new_orb {
+            Orb::Health => (Color::srgb(0.2, 0.8, 0.2), "H"),
+            Orb::Point => (Color::srgb(0.2, 0.2, 0.8), "P"),
+            Orb::Bomb => (Color::srgb(0.8, 0.2, 0.2), "B"),
+        };
+        
+        // Calculate the position for the new orb (rightmost)
+        let new_position = if current_count >= 5 { 4 } else { current_count };
+        
+        commands.entity(container).with_children(|parent| {
             parent.spawn((
                 Node {
                     width: Val::Px(30.0),
@@ -292,11 +361,17 @@ pub fn update_pull_history(
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     border: UiRect::all(Val::Px(2.0)),
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(200.0), // Start off-screen to the right
                     ..default()
                 },
                 BackgroundColor(color.with_alpha(0.3)),
                 BorderColor(color),
-                PullHistoryOrb { _index: index },
+                PullHistoryOrb {
+                    _orb_type: new_orb,
+                    position: new_position,
+                    animation_timer: 0.0,
+                },
             ))
             .with_children(|orb_parent| {
                 orb_parent.spawn((
@@ -308,33 +383,33 @@ pub fn update_pull_history(
                     TextColor(Color::WHITE),
                 ));
             });
+        });
+    }
+    
+    // Clear all orbs if history is empty (level reset)
+    if new_count == 0 && current_count > 0 {
+        for (entity, _) in &existing_orbs {
+            commands.entity(entity).despawn();
         }
+    }
+}
+
+pub fn animate_pull_history(
+    mut orbs: Query<(&mut Node, &mut PullHistoryOrb)>,
+    time: Res<Time>,
+) {
+    for (mut node, mut orb_data) in &mut orbs {
+        // Animate the sliding effect
+        orb_data.animation_timer += time.delta_secs();
         
-        // Add empty slots for remaining history
-        for index in state.pull_history().len()..5 {
-            parent.spawn((
-                Node {
-                    width: Val::Px(30.0),
-                    height: Val::Px(30.0),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    border: UiRect::all(Val::Px(1.0)),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.2, 0.2, 0.2, 0.2)),
-                BorderColor(Color::srgba(0.4, 0.4, 0.4, 0.3)),
-                PullHistoryOrb { _index: index },
-            ))
-            .with_children(|orb_parent| {
-                orb_parent.spawn((
-                    Text::new("?"),
-                    TextFont {
-                        font_size: 14.0,
-                        ..default()
-                    },
-                    TextColor(Color::srgba(0.5, 0.5, 0.5, 0.5)),
-                ));
-            });
-        }
-    });
+        // Position orbs from left to right based on their position index
+        let target_x = orb_data.position as f32 * 40.0; // 30px width + 10px gap
+        let current_x = node.left.resolve(0.0, Vec2::ZERO).unwrap_or(200.0);
+        
+        // Smooth interpolation
+        let t = (orb_data.animation_timer * 5.0).min(1.0); // Animation takes 0.2 seconds
+        let new_x = current_x + (target_x - current_x) * t;
+        
+        node.left = Val::Px(new_x);
+    }
 }

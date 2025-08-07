@@ -29,5 +29,7 @@ pub struct PullHistoryContainer;
 
 #[derive(Component)]
 pub struct PullHistoryOrb {
-    pub _index: usize,
+    pub _orb_type: crate::game_state::orb::Orb,
+    pub position: usize,
+    pub animation_timer: f32,
 }
