@@ -133,7 +133,7 @@ pub fn setup_marketplace_ui(mut commands: Commands, player_state: Option<Res<Pla
             shop_parent.spawn((
                 Button,
                 Node {
-                    width: Val::Px(300.0),
+                    width: Val::Px(200.0),
                     height: Val::Px(60.0),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
@@ -159,7 +159,7 @@ pub fn setup_marketplace_ui(mut commands: Commands, player_state: Option<Res<Pla
             shop_parent.spawn((
                 Button,
                 Node {
-                    width: Val::Px(300.0),
+                    width: Val::Px(200.0),
                     height: Val::Px(60.0),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,

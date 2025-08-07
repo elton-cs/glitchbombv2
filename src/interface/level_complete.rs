@@ -139,8 +139,8 @@ pub fn setup_level_complete_ui(
         parent.spawn((
             Button,
             Node {
-                width: Val::Px(250.0),
-                height: Val::Px(70.0),
+                width: Val::Px(200.0),
+                height: Val::Px(60.0),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 border: UiRect::all(Val::Px(3.0)),
