@@ -146,7 +146,7 @@ pub fn setup_marketplace_ui(mut commands: Commands, player_state: Option<Res<Pla
             ))
             .with_children(|button_parent| {
                 button_parent.spawn((
-                    Text::new(format!("Buy Health Orb - {} Cheddah", ORB_COST)),
+                    Text::new(format!("Health (${})", ORB_COST)),
                     TextFont {
                         font_size: 20.0,
                         ..default()
@@ -172,7 +172,7 @@ pub fn setup_marketplace_ui(mut commands: Commands, player_state: Option<Res<Pla
             ))
             .with_children(|button_parent| {
                 button_parent.spawn((
-                    Text::new(format!("Buy Point Orb - {} Cheddah", ORB_COST)),
+                    Text::new(format!("Point (${})", ORB_COST)),
                     TextFont {
                         font_size: 20.0,
                         ..default()
